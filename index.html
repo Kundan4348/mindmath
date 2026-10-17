@@ -151,6 +151,71 @@ p.lead{color:var(--muted);margin:0 0 14px}
 .pop .sheet{background:var(--bg2);border-radius:20px 20px 0 0;padding:20px 20px calc(var(--sab) + 20px);width:100%;max-width:560px}
 .pop h3{margin:0 0 8px}
 .pop ol{padding-left:20px;color:var(--text)} .pop li{margin:6px 0}
+
+/* ---- daily mix ---- */
+.mix{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.mix .row-m{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--card2);font-size:14px}
+.mix .row-m .e{font-size:20px;width:26px;text-align:center}
+.mix .row-m .l{flex:1;min-width:0} .mix .row-m .l b{display:block} .mix .row-m .l span{color:var(--muted);font-size:12.5px}
+.mix .row-m .go{padding:7px 12px;border-radius:999px;background:var(--accent);color:#fff;font-weight:700;font-size:13px}
+.mix .row-m.done .go{background:transparent;color:var(--ok);font-size:15px}
+.mix .row-m.done{outline:1px solid color-mix(in srgb,var(--ok) 50%,transparent)}
+
+/* ---- brain list ---- */
+.exlist{display:grid;gap:10px}
+.ex{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;text-align:left;width:100%}
+.ex .e{font-size:26px;width:34px;text-align:center}
+.ex .t{flex:1;min-width:0} .ex .t b{display:block;font-size:15px} .ex .t span{display:block;color:var(--muted);font-size:13px;line-height:1.35}
+.ex .pill{font-size:12px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);padding:4px 9px;border-radius:999px;white-space:nowrap}
+.ex .pill.off{color:var(--muted);background:var(--card2)}
+.journal details{border-top:1px solid var(--line);padding:8px 0}
+.journal details:first-child{border-top:0}
+.journal summary{cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:8px}
+.journal summary small{color:var(--muted);font-weight:500}
+.journal p{margin:6px 0 0;white-space:pre-wrap;color:var(--text);font-size:14px}
+
+/* ---- exercise runner ---- */
+#bx{justify-content:flex-start}
+.bxstage{flex:1;display:flex;flex-direction:column;gap:12px;padding:6px 0 12px}
+.bxcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.bxbig{font-size:clamp(22px,5.4vw,30px);font-weight:700;line-height:1.3;text-align:center;padding:14px 4px;min-height:92px;display:flex;align-items:center;justify-content:center}
+.bxbig.q{font-size:clamp(20px,4.8vw,26px)}
+.bxsub{color:var(--muted);font-size:13.5px;text-align:center}
+.bxprog{display:flex;gap:5px;justify-content:center;margin-top:6px}
+.bxprog i{width:8px;height:8px;border-radius:50%;background:var(--line)} .bxprog i.on{background:var(--accent)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opts button{padding:14px 10px;border-radius:14px;background:var(--card2);border:1px solid var(--line);font-weight:700;font-size:16px;min-height:54px;text-transform:capitalize}
+.opts button.ok{border-color:var(--ok);color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--card2))}
+.opts button.bad{border-color:var(--bad);color:var(--bad)}
+.opts.compass{grid-template-columns:repeat(3,1fr)}
+.opts.compass button{min-height:58px;font-size:14px}
+.opts.grids{grid-template-columns:repeat(2,1fr)}
+.opts.grids button{padding:10px;display:grid;place-items:center}
+.grid{display:grid;gap:3px;--cell:26px;width:max-content}
+.grid i{width:var(--cell);height:var(--cell);border-radius:4px;background:var(--line);opacity:.35;position:relative}
+.grid i.on{background:var(--accent);opacity:1}
+.grid i.paper{background:color-mix(in srgb,var(--text) 10%,var(--card));opacity:1;border:1px solid var(--line)}
+.grid i.away{opacity:.15}
+.grid i.hole::after{content:"";position:absolute;inset:30%;border-radius:50%;background:var(--text)}
+.grid.big{--cell:38px;margin:6px auto}
+.bxin{width:100%;font:inherit;font-size:18px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);color:var(--text);outline:none}
+.bxin:focus{border-color:var(--accent)}
+.bxin.num{font-size:34px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums}
+textarea.bxin{min-height:110px;resize:vertical;line-height:1.45}
+.ideas{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;max-height:160px;overflow:auto}
+.ideas span{background:var(--card2);border-radius:999px;padding:5px 10px;font-size:13.5px}
+.ideas span.new{outline:1px solid var(--ok)}
+.bxfoot{display:flex;gap:8px;padding:4px 0 10px}
+.bxfoot .btn{margin-top:0}
+.stars{display:flex;gap:10px;justify-content:center;margin:10px 0}
+.stars button{font-size:30px;opacity:.35} .stars button.on{opacity:1}
+.explain{background:color-mix(in srgb,var(--hint) 12%,var(--card));border:1px solid color-mix(in srgb,var(--hint) 40%,var(--line));border-radius:14px;padding:12px 14px;font-size:14.5px}
+.explain b{color:var(--hint)}
+.bxbig.ok{color:var(--ok)} .bxbig.bad{color:var(--bad)}
+svg.pic{width:100%;max-width:420px;display:block;margin:4px auto;height:auto}
+.wordshow{font-size:clamp(26px,7vw,40px);font-weight:800;text-align:center;line-height:1.2}
+.wordshow small{display:block;font-size:15px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.lvlpill{display:inline-block;font-size:12px;color:var(--muted);background:var(--card2);padding:3px 9px;border-radius:999px}
 </style>
 </head>
 <body>
@@ -177,6 +242,7 @@ p.lead{color:var(--muted);margin:0 0 14px}
       <div class="bar"><i id="goalBar"></i></div>
       <div class="t"><span id="goalText">0 / 10 today</span><span id="goalRight">Goal: 10</span></div>
     </div>
+    <div class="mix" id="mixBox"></div>
   </div>
   <div class="card">
     <h2>What to practice</h2>
@@ -260,6 +326,29 @@ p.lead{color:var(--muted);margin:0 0 14px}
   <div style="height:16px"></div>
 </section>
 
+<!-- BRAIN: list of imagining and creative exercises -->
+<section class="view" id="brain">
+  <h1>Brain</h1>
+  <p class="lead">Imagining exercises build complex pictures one piece at a time. Creative ones push for more, and odder, ideas. Levels move up after two right in a row.</p>
+  <h2>Imagining</h2>
+  <div class="exlist" id="exImagine"></div>
+  <h2 style="margin-top:16px">Out-of-the-box thinking</h2>
+  <div class="exlist" id="exCreate"></div>
+  <div class="card journal" style="margin-top:16px" id="journalCard"><h2>Your ideas</h2><div id="journal"></div></div>
+  <div style="height:16px"></div>
+</section>
+
+<!-- BX: exercise runner -->
+<section class="view" id="bx">
+  <div class="ptop">
+    <button id="bxQuit" style="color:var(--muted);font-weight:700">✕ End</button>
+    <span id="bxMode"></span>
+    <span class="timer" id="bxTimer"></span>
+  </div>
+  <div class="bxstage" id="bxStage"></div>
+  <div class="bxfoot" id="bxFoot"></div>
+</section>
+
 <!-- STATS -->
 <section class="view" id="stats">
   <h1>Progress</h1>
@@ -277,6 +366,11 @@ p.lead{color:var(--muted);margin:0 0 14px}
     <table class="table" id="opTable"></table>
   </div>
   <div class="card">
+    <h2>Brain exercises (all time)</h2>
+    <table class="table" id="brainTable"></table>
+    <div class="kv" id="brainTotals" style="margin-top:12px"></div>
+  </div>
+  <div class="card">
     <h2>Totals</h2>
     <div class="kv" id="totals"></div>
   </div>
@@ -289,6 +383,8 @@ p.lead{color:var(--muted);margin:0 0 14px}
   <div class="card">
     <div class="set"><div><div class="l">Daily goal</div><div class="d">Problems to solve for the day to count toward your streak</div></div>
       <div class="stepper"><button id="goalMinus">−</button><span id="goalV">10</span><button id="goalPlus">+</button></div></div>
+    <div class="set"><div><div class="l">Daily mix</div><div class="d">To lock the day: the math goal <b>plus</b> one imagining and one creative exercise</div></div>
+      <div class="seg" id="mixSeg"><button data-m="1" class="on">On</button><button data-m="0">Off</button></div></div>
     <div class="set"><div><div class="l">Theme</div><div class="d">Follows your device unless you pick one</div></div>
       <div class="seg" id="themeSeg"><button data-t="auto" class="on">Auto</button><button data-t="dark">Dark</button><button data-t="light">Light</button></div></div>
     <div class="set"><div><div class="l">Haptics</div><div class="d">Vibrate on right / wrong (phones that support it)</div></div>
@@ -309,6 +405,7 @@ p.lead{color:var(--muted);margin:0 0 14px}
 
 <nav>
   <button data-view="home" class="active"><span class="i">⌂</span>Home</button>
+  <button data-view="brain"><span class="i">🧠</span>Brain</button>
   <button data-view="stats"><span class="i">📈</span>Progress</button>
   <button data-view="settings"><span class="i">⚙</span>Settings</button>
 </nav>
@@ -321,6 +418,8 @@ p.lead{color:var(--muted);margin:0 0 14px}
 </div></div>
 
 <script src="engine.js"></script>
+<script src="brain.js"></script>
 <script src="app.js"></script>
+<script src="brain-ui.js"></script>
 </body>
 </html>

@@ -10,8 +10,9 @@
 
   // ---------- state ----------
   const defaults = () => ({
-    settings: { goal: 10, theme: 'auto', haptics: true, op: 'mixed', level: 'auto' },
+    settings: { goal: 10, theme: 'auto', haptics: true, op: 'mixed', level: 'auto', mix: true },
     autoLevel: 'easy',
+    brain: { level: {}, recent: {}, usesSeen: {}, journal: [], bestParts: 0 },   // imagining / creative exercises (brain-ui.js)
     totalScore: 0,
     best10: {},        // op -> fastest seconds for a full 10-question set (all 10 answered, none skipped)
     days: {},          // 'YYYY-MM-DD': { solved, attempts, hints, seconds, score, ops: { add: {solved, attempts, seconds} } }
@@ -24,7 +25,7 @@
       const raw = localStorage.getItem(STORE_KEY);
       if (!raw) return defaults();
       const d = defaults(), o = JSON.parse(raw);
-      return Object.assign(d, o, { settings: Object.assign(d.settings, o.settings || {}) });
+      return Object.assign(d, o, { settings: Object.assign(d.settings, o.settings || {}), brain: Object.assign(d.brain, o.brain || {}) });
     } catch (e) { return defaults(); }
   }
   function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { /* storage full or private mode */ } }
@@ -32,6 +33,12 @@
   function dayRec(k) {
     if (!S.days[k]) S.days[k] = { solved: 0, attempts: 0, hints: 0, seconds: 0, score: 0, ops: {} };
     return S.days[k];
+  }
+  // a day counts for the streak when the math goal is met and, with the daily mix on, one imagining + one creative exercise were done
+  function dayMet(k) {
+    const d = S.days[k]; if (!d || d.solved < S.settings.goal) return false;
+    if (!S.settings.mix) return true;
+    const b = d.brain || {}; return (b.imagine || 0) >= 1 && (b.create || 0) >= 1;
   }
 
   // ---------- theme ----------
@@ -47,8 +54,9 @@
   function show(view) {
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === view));
     document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
-    document.querySelector('nav').classList.toggle('hidden', view === 'practice');
+    document.querySelector('nav').classList.toggle('hidden', view === 'practice' || view === 'bx');
     if (view === 'home') renderHome();
+    if (view === 'brain' && window.BrainUI) window.BrainUI.renderList();
     if (view === 'stats') renderStats();
     if (view === 'settings') renderSettings();
     window.scrollTo(0, 0);
@@ -56,7 +64,7 @@
   document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => show(b.dataset.view)));
 
   // ---------- home ----------
-  function streak() { return E.streakFrom(S.days, S.settings.goal, todayKey()); }
+  function streak() { return E.streakFrom(S.days, dayMet, todayKey()); }
   function renderHome() {
     const st = streak(), d = S.days[todayKey()] || { solved: 0, seconds: 0 };
     $('hStreak').textContent = st.current;
@@ -64,11 +72,13 @@
     $('hVel').textContent = d.solved ? (d.seconds / d.solved).toFixed(1) : '–';
     const pct = Math.min(100, Math.round(100 * d.solved / S.settings.goal));
     $('goalBar').style.width = pct + '%';
-    $('goalText').textContent = `${d.solved} / ${S.settings.goal} today${st.todayMet ? ' ✓' : ''}`;
-    $('goalRight').textContent = st.todayMet ? 'Streak safe for today' : `${Math.max(0, S.settings.goal - d.solved)} to go`;
+    const mathLeft = Math.max(0, S.settings.goal - d.solved);
+    $('goalText').textContent = `${d.solved} / ${S.settings.goal} math today${st.todayMet ? ' ✓' : ''}`;
+    $('goalRight').textContent = st.todayMet ? 'Streak safe for today' : mathLeft ? `${mathLeft} to go` : S.settings.mix ? 'Math done — finish the mix' : 'Done';
+    if (window.BrainUI) window.BrainUI.renderMix();
     const h = new Date().getHours();
     $('greet').textContent = st.todayMet ? 'Goal done — keep rolling?' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-    $('greetSub').textContent = st.current > 0 && !st.todayMet ? `Solve ${Math.max(0, S.settings.goal - d.solved)} more to keep your ${st.current}-day streak.`
+    $('greetSub').textContent = st.current > 0 && !st.todayMet ? (mathLeft ? `Solve ${mathLeft} more` : 'Finish today\'s mix') + ` to keep your ${st.current}-day streak.`
       : st.current === 0 && Object.keys(S.days).length ? 'Start a new streak today.' : 'A few minutes a day keeps everyday numbers easy.';
     document.querySelectorAll('#opSeg button').forEach(b => b.classList.toggle('on', b.dataset.op === S.settings.op));
     document.querySelectorAll('#lvlSeg button').forEach(b => b.classList.toggle('on', b.dataset.lvl === S.settings.level));
@@ -95,7 +105,7 @@
     for (let i = 0; i < 28; i++) {
       const d = S.days[k];
       const e = document.createElement('div');
-      e.className = 'd' + (d && d.solved >= S.settings.goal ? ' met' : d && d.solved > 0 ? ' part' : '') + (k === today ? ' today' : '');
+      e.className = 'd' + (dayMet(k) ? ' met' : d && (d.solved > 0 || (d.brain && (d.brain.imagine || d.brain.create))) ? ' part' : '') + (k === today ? ' today' : '');
       e.textContent = Number(k.slice(-2));
       e.title = d ? `${k}: ${d.solved} solved` : k;
       cal.appendChild(e);
@@ -224,7 +234,8 @@
       if (sess.mode === 'set') renderTimer(); else clearInterval(tick);   // set: keep the running clock visible
       // streak just completed?
       const st = streak();
-      if (st.todayMet && d.solved === S.settings.goal) toast(`🔥 Daily goal done — streak ${st.current}`);
+      if (st.todayMet && d.solved === S.settings.goal) toast(`🔥 Day locked — streak ${st.current}`);
+      else if (d.solved === S.settings.goal && S.settings.mix) toast('Math goal done — one imagining + one creative exercise locks the day');
       if (sess.mode === 'set' && sess.done >= SET_N) { sess.finishedAt = Date.now(); clearInterval(tick); setTimeout(endSession, 650); }
       else setTimeout(nextProblem, 650);
     } else {
@@ -346,6 +357,7 @@
       ['Best streak', `${st.best} day${st.best === 1 ? '' : 's'}`],
       ['Hints used', totHints]
     ].map(([k, v]) => `<span class="k">${k}</span><span class="v">${v}</span>`).join('');
+    if (window.BrainUI) window.BrainUI.renderStats();
   }
   function trow(label, r, total) {
     return `<tr${total ? ' class="total"' : ''}><td>${label}</td><td class="n">${r.solved}</td><td class="n">${r.attempts ? Math.round(100 * r.solved / r.attempts) + '%' : '–'}</td><td class="n">${r.solved ? (r.seconds / r.solved).toFixed(1) : '–'}</td></tr>`;
@@ -377,12 +389,14 @@
     $('goalV').textContent = S.settings.goal;
     document.querySelectorAll('#themeSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === S.settings.theme));
     document.querySelectorAll('#hapticSeg button').forEach(b => b.classList.toggle('on', (b.dataset.h === '1') === !!S.settings.haptics));
+    document.querySelectorAll('#mixSeg button').forEach(b => b.classList.toggle('on', (b.dataset.m === '1') === !!S.settings.mix));
     $('installHelp').textContent = isStandalone() ? 'Installed — you are running the app.' : 'Add to your home screen for full-screen, offline use.';
   }
   $('goalMinus').addEventListener('click', () => { S.settings.goal = Math.max(3, S.settings.goal - 1); save(); renderSettings(); });
   $('goalPlus').addEventListener('click', () => { S.settings.goal = Math.min(100, S.settings.goal + 1); save(); renderSettings(); });
   $('themeSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.settings.theme = b.dataset.t; save(); applyTheme(); renderSettings(); });
   $('hapticSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.settings.haptics = b.dataset.h === '1'; save(); renderSettings(); });
+  $('mixSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.settings.mix = b.dataset.m === '1'; save(); renderSettings(); renderChips(); });
   $('btnReset').addEventListener('click', () => { if (confirm('Delete all MindMath progress on this device?')) { S = defaults(); save(); applyTheme(); toast('Progress reset'); show('home'); } });
   $('btnExport').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
@@ -398,7 +412,7 @@
         const o = JSON.parse(r.result);
         if (!o || typeof o !== 'object' || !o.days) throw new Error('not a MindMath backup');
         if (!confirm('Replace the progress on this device with the imported file?')) return;
-        S = Object.assign(defaults(), o, { settings: Object.assign(defaults().settings, o.settings || {}) });
+        S = Object.assign(defaults(), o, { settings: Object.assign(defaults().settings, o.settings || {}), brain: Object.assign(defaults().brain, o.brain || {}) });
         save(); applyTheme(); toast('Progress imported'); show('home');
       } catch (err) { toast('Could not import: ' + err.message); }
     };
@@ -443,6 +457,8 @@
   let lastDay = todayKey();
   setInterval(() => { const k = todayKey(); if (k !== lastDay) { lastDay = k; if ($('home').classList.contains('active')) renderHome(); else renderChips(); } }, 30000);
 
+  // hooks for brain-ui.js (shared state, persistence, navigation, feedback)
+  window.__mmHooks = { get S() { return S; }, save, dayRec, todayKey, streak, dayMet, toast, show, esc, buzz, renderChips, fmtClock };
   // test hooks (used by the browser smoke test only)
   window.__mm = { get state() { return S; }, set state(v) { S = v; save(); }, startSession, endSession, key, showHint, skip, currentProblem: () => prob, show, todayKey, render: renderHome };
 })();

@@ -510,7 +510,8 @@
   /** days: { 'YYYY-MM-DD': { solved, ... } }, goal: solves needed per day, today: 'YYYY-MM-DD'
       returns { current, best, todayMet, alive } — alive = streak is not yet broken (today may still be pending) */
   function streakFrom(days, goal, today) {
-    const met = (k) => !!(days[k] && days[k].solved >= goal);
+    // goal: number of solves, or a function(dayKey) -> boolean (used by the daily mix, which also needs a brain exercise)
+    const met = typeof goal === 'function' ? (k) => !!goal(k) : (k) => !!(days[k] && days[k].solved >= goal);
     let current = 0;
     let k = today;
     if (!met(k)) k = shiftDay(k, -1); // today not done yet: streak alive if yesterday met
