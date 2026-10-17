@@ -1,9 +1,10 @@
 /* MindMath service worker — offline app shell, cache-first with network refresh */
-const CACHE = 'mindmath-v1';
+const CACHE = 'mindmath-v2';
 const ASSETS = [
   './',
   './index.html',
   './engine.js',
+  './app.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

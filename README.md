@@ -7,6 +7,15 @@ A small installable web app (PWA) for daily mental-math practice: addition, subt
 
 ## Test
     node test/engine.test.js     # generates 45,000 problems and checks answers, hints, scoring, streak logic
+    test/e2e.browser.js and test/e2e.autocheck.js are browser scripts: open the app, paste one into the console (or playwright eval) and read the returned object.
+
+## Answering
+There is no Check / Enter button. Every answer is a whole number, so the app checks the moment you have typed as many digits as the answer has. A shorter number is checked after a 1.5 s pause. Wrong -> shake, input clears, try again or tap Hint. Enter still works on a keyboard if pressed.
+
+## Modes
+- **Practice (endless)** — go until you tap End.
+- **10 questions — how fast?** — ten problems, the clock runs from the first to the tenth; the summary shows the total time and keeps your best time per operation (only when all ten were answered, no skips).
+- **60-second sprint** — as many as you can in a minute.
 
 ## Files
 - `index.html` — UI (home, practice, summary, progress, settings)

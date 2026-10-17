@@ -109,10 +109,9 @@ p.lead{color:var(--muted);margin:0 0 14px}
 .tools{display:flex;gap:8px;margin:4px 0 8px}
 .tools button{flex:1;padding:10px;border-radius:12px;background:var(--card2);font-weight:600;font-size:14px;color:var(--text)}
 .tools button.hint{color:var(--hint)}
-.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-bottom:10px}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-bottom:10px}
 .keypad button{height:58px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-size:24px;font-weight:700}
 .keypad button:active{background:var(--card2)}
-.keypad .go{grid-row:span 2;height:auto;background:var(--accent);color:#fff;border-color:transparent;font-size:20px}
 .keypad .del{font-size:20px;color:var(--muted)}
 @media (min-width:720px){ .keypad button{height:52px} .keypad.hidden-desktop{display:none} }
 .kbd-note{display:none;text-align:center;color:var(--muted);font-size:13px;padding:10px 0 14px}
@@ -198,6 +197,7 @@ p.lead{color:var(--muted);margin:0 0 14px}
     </div>
     <p class="d" id="lvlNote" style="font-size:13px;color:var(--muted);margin:8px 0 0">Auto moves you up after 5 quick correct answers in a row, down after 3 misses in 5.</p>
     <button class="btn" id="btnFree">▶ Practice (endless)</button>
+    <button class="btn secondary" id="btnSet">🔟 10 questions — how fast?</button>
     <button class="btn secondary" id="btnSprint">⏱ 60-second sprint</button>
     <div class="install" id="installBox"><span>Install MindMath on this device</span><button id="btnInstall">Install</button></div>
   </div>
@@ -227,17 +227,21 @@ p.lead{color:var(--muted);margin:0 0 14px}
     <button id="btnSkip">Skip →</button>
   </div>
   <div class="keypad" id="keypad">
-    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button class="del" data-k="del">⌫</button>
-    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button class="go" data-k="go">Check</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
     <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
-    <button data-k="0" style="grid-column:span 2">0</button><button data-k=".">.</button>
+    <button data-k=".">.</button><button data-k="0">0</button><button class="del" data-k="del">⌫</button>
   </div>
-  <div class="kbd-note">Type the answer and press Enter · H for a hint · S to skip · Esc to end</div>
+  <div class="kbd-note">Just type the answer — it checks itself · H for a hint · S to skip · Esc to end</div>
 </section>
 
 <!-- SUMMARY -->
 <section class="view" id="summary">
-  <h1>Session done</h1>
+  <h1 id="sTitle">Session done</h1>
+  <div class="card summary hidden" id="sTimeCard">
+    <div class="big" id="sTime">0:00.0</div>
+    <div class="sub" id="sTimeSub">for 10 questions</div>
+  </div>
   <div class="card summary">
     <div class="big" id="sScore">0</div>
     <div class="sub">points this session</div>

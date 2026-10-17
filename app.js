@@ -5,12 +5,15 @@
   const $ = (id) => document.getElementById(id);
   const STORE_KEY = 'mindmath.v1';
   const SPRINT_SEC = 60;
+  const SET_N = 10;            // "10 questions" mode
+  const IDLE_CHECK_MS = 1500;  // auto-check a short answer after this pause
 
   // ---------- state ----------
   const defaults = () => ({
     settings: { goal: 10, theme: 'auto', haptics: true, op: 'mixed', level: 'auto' },
     autoLevel: 'easy',
     totalScore: 0,
+    best10: {},        // op -> fastest seconds for a full 10-question set (all 10 answered, none skipped)
     days: {},          // 'YYYY-MM-DD': { solved, attempts, hints, seconds, score, ops: { add: {solved, attempts, seconds} } }
     history: []        // last 300 attempts: { t, op, level, text, answer, given, correct, sec, hint, pts }
   });
@@ -102,21 +105,23 @@
   $('opSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.settings.op = b.dataset.op; save(); renderHome(); });
   $('lvlSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.settings.level = b.dataset.lvl; save(); renderHome(); });
   $('btnFree').addEventListener('click', () => startSession('free'));
+  $('btnSet').addEventListener('click', () => startSession('set'));
   $('btnSprint').addEventListener('click', () => startSession('sprint'));
 
   // ---------- practice session ----------
-  let sess = null, prob = null, input = '', tStart = 0, tick = null, hintShown = 0, locked = false, recent = [];
+  let sess = null, prob = null, input = '', tStart = 0, tick = null, hintShown = 0, locked = false, recent = [], idleT = null;
 
   function currentLevel() { return S.settings.level === 'auto' ? S.autoLevel : S.settings.level; }
 
   function startSession(mode) {
-    sess = { mode, start: Date.now(), solved: 0, attempts: 0, hints: 0, seconds: 0, score: 0, fastest: null, misses: [] };
+    sess = { mode, op: S.settings.op, start: Date.now(), done: 0, solved: 0, attempts: 0, hints: 0, seconds: 0, score: 0, fastest: null, misses: [], skipped: 0 };
     recent = [];
-    $('pMode').textContent = mode === 'sprint' ? 'Sprint' : `${E.OP_LABEL[S.settings.op] || 'Mixed'}`;
+    $('pMode').textContent = mode === 'sprint' ? 'Sprint' : mode === 'set' ? `${SET_N} questions` : `${E.OP_LABEL[S.settings.op] || 'Mixed'}`;
     show('practice');
     nextProblem();
   }
   function nextProblem() {
+    clearTimeout(idleT);
     prob = E.generate(S.settings.op, currentLevel());
     input = ''; hintShown = 0; locked = false;
     $('q').textContent = prob.text;
@@ -130,13 +135,18 @@
     clearInterval(tick); tick = setInterval(renderTimer, 100); renderTimer();
   }
   function elapsed() { return (performance.now() - tStart) / 1000; }
+  function sessionSec() { return (Date.now() - sess.start) / 1000; }
+  function fmtClock(sec) { const m = Math.floor(sec / 60), s = sec - m * 60; return m ? `${m}:${s.toFixed(1).padStart(4, '0')}` : `${s.toFixed(1)}s`; }
   function renderTimer() {
     if (!sess) return;
     if (sess.mode === 'sprint') {
-      const left = Math.max(0, SPRINT_SEC - (Date.now() - sess.start) / 1000);
+      const left = Math.max(0, SPRINT_SEC - sessionSec());
       $('timer').textContent = `${left.toFixed(0)}s left`;
       $('timer').classList.toggle('slow', left < 10);
       if (left <= 0) { endSession(); return; }
+    } else if (sess.mode === 'set') {
+      $('timer').textContent = `${sess.done}/${SET_N} · ${fmtClock(sessionSec())}`;
+      $('timer').classList.remove('slow');
     } else {
       const s = elapsed();
       $('timer').textContent = s.toFixed(1) + 's';
@@ -148,13 +158,24 @@
     if (!input) a.innerHTML = '<span class="ph">type your answer</span>';
     else a.textContent = input.replace(/^(-?\d+)(?=(\d{3})+(\.|$))/g, (m) => Number(m).toLocaleString('en-US'));
   }
+  // No Check button: the answer is checked as soon as it has as many digits as the right answer,
+  // or after a short pause if a shorter number was typed.
+  function autoCheck() {
+    clearTimeout(idleT);
+    if (!input || locked) return;
+    const typed = input.replace(/\D/g, '').replace(/^0+(?=\d)/, '').length;
+    const need = String(Math.round(Math.abs(prob.answer))).length;
+    if (typed >= need) submit();
+    else idleT = setTimeout(() => { if (input && !locked) submit(); }, IDLE_CHECK_MS);
+  }
   function key(k) {
     if (locked || !sess) return;
     if (k === 'del') input = input.slice(0, -1);
-    else if (k === 'go') return submit();
+    else if (k === 'go') { renderInput(); return submit(); }
     else if (k === '.') { if (!input.includes('.')) input = (input || '0') + '.'; }
     else if (/^\d$/.test(k)) { if (input.replace('.', '').length < 9) input += k; }
     renderInput();
+    autoCheck();
   }
   $('keypad').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) key(b.dataset.k); });
   document.addEventListener('keydown', (e) => {
@@ -174,7 +195,8 @@
   function buzz(pattern) { if (S.settings.haptics && navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} } }
 
   function submit() {
-    if (!input) return;
+    clearTimeout(idleT);
+    if (!input || locked) return;
     const sec = elapsed();
     const correct = E.checkAnswer(prob, input);
     const usedHint = hintShown > 0;
@@ -198,11 +220,13 @@
       $('fb').className = 'feedback ok';
       buzz(30);
       pushHistory(correct, sec, usedHint, pts);
-      clearInterval(tick);
+      sess.done++;
+      if (sess.mode === 'set') renderTimer(); else clearInterval(tick);   // set: keep the running clock visible
       // streak just completed?
       const st = streak();
       if (st.todayMet && d.solved === S.settings.goal) toast(`🔥 Daily goal done — streak ${st.current}`);
-      setTimeout(nextProblem, 650);
+      if (sess.mode === 'set' && sess.done >= SET_N) { sess.finishedAt = Date.now(); clearInterval(tick); setTimeout(endSession, 650); }
+      else setTimeout(nextProblem, 650);
     } else {
       recent.push({ correct: false, fast: false });
       $('ans').classList.remove('bad'); void $('ans').offsetWidth; $('ans').classList.add('bad');
@@ -238,16 +262,36 @@
   $('hintMore').addEventListener('click', showHint);
   function skip() {
     if (locked) return;
+    clearTimeout(idleT);
     sess.misses.push({ text: prob.text, answer: prob.answer, given: 'skipped', hint: prob.hint });
-    nextProblem();
+    sess.skipped++; sess.done++;
+    if (sess.mode === 'set' && sess.done >= SET_N) { sess.finishedAt = Date.now(); endSession(); }
+    else nextProblem();
   }
   $('btnSkip').addEventListener('click', skip);
   $('btnQuit').addEventListener('click', endSession);
 
   function endSession() {
-    clearInterval(tick);
+    clearInterval(tick); clearTimeout(idleT);
     if (!sess) return show('home');
     const s = sess; sess = null;
+    // 10-question set: total wall-clock time, and a personal best when all 10 were answered
+    const isSet = s.mode === 'set';
+    const total = ((s.finishedAt || Date.now()) - s.start) / 1000;
+    const full = isSet && s.done >= SET_N && s.skipped === 0;
+    let bestNote = '';
+    if (full) {
+      const prev = S.best10[s.op];
+      if (prev === undefined || total < prev) { S.best10[s.op] = Math.round(total * 10) / 10; bestNote = prev === undefined ? 'Your first full set — this is the time to beat.' : `New best! Previous: ${fmtClock(prev)}`; }
+      else bestNote = `Your best: ${fmtClock(prev)}`;
+    } else if (isSet) {
+      bestNote = s.done < SET_N ? `Ended early — ${s.done} of ${SET_N} done.` : `Answer all ${SET_N} without skipping to set a best time.`;
+    }
+    const wrong = s.attempts - s.solved;
+    $('sTitle').textContent = isSet ? (s.done >= SET_N ? `${SET_N} questions done` : 'Set ended') : 'Session done';
+    $('sTimeCard').classList.toggle('hidden', !isSet);
+    $('sTime').textContent = fmtClock(total);
+    $('sTimeSub').textContent = `${s.solved} right · ${wrong} wrong ${wrong === 1 ? 'try' : 'tries'} · ${s.skipped} skipped${bestNote ? ' — ' + bestNote : ''}`;
     save();
     $('sScore').textContent = s.score.toLocaleString('en-US');
     $('sSolved').textContent = s.solved;
